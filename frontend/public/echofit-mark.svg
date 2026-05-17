@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="EchoFit logo">
+  <rect width="128" height="128" rx="32" fill="#f6f7f9" />
+  <circle cx="64" cy="64" r="36" fill="#e0edff" />
+  <path
+    d="M44 64c0-11 9-20 20-20 7.8 0 14.6 4.4 17.9 10.9H68.5c-4 0-7.3 3.2-7.3 7.1s3.3 7.1 7.3 7.1h13.4C78.6 79.6 71.8 84 64 84c-11 0-20-9-20-20Z"
+    fill="#2563eb"
+  />
+</svg>
+

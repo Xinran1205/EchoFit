@@ -1,0 +1,50 @@
+:root:root {
+  --adm-color-primary: #31465d;
+  --adm-color-success: #2f7756;
+  --adm-color-warning: #b47d2c;
+  --adm-color-danger: #b54949;
+  --adm-color-text: #17212f;
+  --adm-color-text-secondary: #617083;
+  --adm-color-border: rgba(27, 39, 56, 0.08);
+  --adm-color-box: #f5f1ea;
+  --adm-color-background: #fcfbf8;
+  --adm-font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "SF Pro Display",
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    sans-serif;
+
+  --app-bg: #f2ede5;
+  --app-bg-soft: #f8f5ef;
+  --app-card-bg: rgba(255, 255, 255, 0.76);
+  --app-card-strong: rgba(255, 255, 255, 0.92);
+  --app-surface-soft: #f6f1e9;
+  --app-surface-strong: #fdfbf7;
+  --app-text-main: #17212f;
+  --app-text-sub: #617083;
+  --app-text-muted: #8a97a7;
+  --app-border: rgba(27, 39, 56, 0.08);
+  --app-border-strong: rgba(27, 39, 56, 0.12);
+  --app-accent: #31465d;
+  --app-accent-strong: #223246;
+  --app-accent-soft: #e8edf4;
+  --app-warm-soft: #eee4d3;
+  --app-success-soft: #e8f4ee;
+  --app-shadow-card: 0 18px 42px rgba(20, 28, 39, 0.08);
+  --app-shadow-float: 0 22px 52px rgba(20, 28, 39, 0.14);
+  --app-radius-card: 26px;
+  --app-radius-button: 18px;
+  --app-radius-pill: 999px;
+  --app-page-x: 18px;
+  --app-card-padding: 18px;
+  --app-section-gap: 16px;
+  --app-tab-height: 62px;
+}

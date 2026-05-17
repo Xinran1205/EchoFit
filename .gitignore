@@ -1,0 +1,25 @@
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Java / backend
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Runtime files
+*.log
+*.local
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# Docker
+docker/mysql/data/
+
