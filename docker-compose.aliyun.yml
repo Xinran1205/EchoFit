@@ -26,6 +26,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      network: host
     container_name: echofit-backend
     restart: unless-stopped
     depends_on:
@@ -52,6 +53,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      network: host
     container_name: echofit-frontend
     restart: unless-stopped
     depends_on:

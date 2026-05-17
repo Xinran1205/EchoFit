@@ -42,6 +42,44 @@ openssl rand -hex 32
 docker compose --env-file deploy/aliyun.env -f docker-compose.aliyun.yml up -d --build
 ```
 
+如果你看到这类错误：
+
+- `Temporary failure in name resolution`
+- `Unknown host maven.aliyun.com`
+- `Unknown host repo.maven.apache.org`
+- `npm ci` 下载依赖失败
+
+优先处理服务器 Docker 的 DNS：
+
+1. 创建或修改 `/etc/docker/daemon.json`
+
+```json
+{
+  "dns": ["223.5.5.5", "223.6.6.6", "119.29.29.29", "8.8.8.8", "1.1.1.1"]
+}
+```
+
+2. 重启 Docker
+
+```bash
+systemctl restart docker
+```
+
+3. 再重新执行部署命令
+
+```bash
+docker compose --env-file deploy/aliyun.env -f docker-compose.aliyun.yml up -d --build
+```
+
+当前仓库已经做了几层兜底：
+
+- Maven 构建默认走阿里云镜像
+- `npm ci` 默认走 `npmmirror`
+- 构建阶段增加重试
+- 阿里云 Compose 的构建网络使用 `host`
+
+如果在这些兜底之后仍然报 `name resolution`，那就基本可以确定是服务器 Docker DNS 本身有问题，不是项目配置错误。
+
 ## 第三步：检查状态
 
 ```bash
