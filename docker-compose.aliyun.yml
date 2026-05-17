@@ -12,6 +12,8 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "127.0.0.1:3306:3306"
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
@@ -36,6 +38,8 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
       MYSQL_DATABASE: ${MYSQL_DATABASE:-training_echo}
       MYSQL_USER: ${MYSQL_USER:-training}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
@@ -48,12 +52,7 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
       TZ: ${TZ:-Asia/Shanghai}
-    expose:
-      - "8080"
-    ports:
-      - "127.0.0.1:8080:8080"
-    networks:
-      - echofit
+    network_mode: host
 
   frontend:
     build:
