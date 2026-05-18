@@ -37,6 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path = path.substring(contextPath.length());
         }
         return "/auth/login".equals(path)
+            || "/auth/register/code".equals(path)
             || "/auth/register".equals(path)
             || "/actuator/health".equals(path);
     }

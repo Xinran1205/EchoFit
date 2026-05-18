@@ -18,6 +18,14 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @PostMapping("/register/code")
+    public ApiResponse<Void> sendRegisterVerificationCode(
+        @Valid @RequestBody SendRegisterVerificationCodeRequest request
+    ) {
+        authService.sendRegisterVerificationCode(request);
+        return ApiResponse.success();
+    }
+
     @PostMapping("/register")
     public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ApiResponse.success(authService.register(request));

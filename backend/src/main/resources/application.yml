@@ -17,16 +17,33 @@ spring:
     default-property-inclusion: non_null
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 5s
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:465}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
     protocol: smtp
     properties:
       mail:
         smtp:
           auth: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
           ssl:
             enable: true
           starttls:
@@ -52,6 +69,10 @@ app:
   mail:
     enabled: ${MAIL_ENABLED:false}
     from: ${MAIL_FROM:}
+  auth:
+    verification-code:
+      expire-minutes: ${AUTH_CODE_EXPIRE_MINUTES:10}
+      resend-seconds: ${AUTH_CODE_RESEND_SECONDS:60}
   reminder:
     default-enabled: true
     daily-hour: 20

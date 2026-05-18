@@ -1,12 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, DotLoading, Toast } from 'antd-mobile'
 import { SetOutline } from 'antd-mobile-icons'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { AppCard } from '../../components/app/AppCard'
 import { AppPage } from '../../components/app/AppPage'
 import { PageHeader } from '../../components/app/PageHeader'
+import { GenderSheet } from '../../components/settings/GenderSheet'
+import { PasswordSheet } from '../../components/settings/PasswordSheet'
 import { SettingsSheet } from '../../components/settings/SettingsSheet'
+import {
+  getUserGenderLabel
+} from '../../features/auth/auth.dictionary'
+import {
+  sendPasswordChangeVerificationCode,
+  updatePassword,
+  updateUserProfile
+} from '../../features/auth/auth.api'
+import { useCooldownCountdown } from '../../hooks/useCooldownCountdown'
 import { useAuthStore } from '../../features/auth/auth.store'
+import type { UserGender } from '../../features/auth/auth.types'
 import { getReminderConfig, updateReminderConfig } from '../../features/reminder/reminder.api'
 import type { ReminderConfig } from '../../features/reminder/reminder.types'
 import {
@@ -18,16 +30,60 @@ import type { HomeSummary } from '../../features/training/training.types'
 import { getErrorMessage } from '../../lib/api'
 import { formatDisplayDate, formatDuration, formatWeekday } from '../../utils/date'
 
+type HomeLocationState = {
+  promptGender?: boolean
+}
+
 export function HomePage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const clearSession = useAuthStore((state) => state.clearSession)
   const currentUser = useAuthStore((state) => state.user)
+  const syncCurrentUser = useAuthStore((state) => state.syncCurrentUser)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [genderSheetMode, setGenderSheetMode] = useState<'onboarding' | 'settings' | null>(null)
+  const [selectedGender, setSelectedGender] = useState<UserGender>(currentUser?.gender ?? 'male')
   const [summary, setSummary] = useState<HomeSummary | null>(null)
   const [reminderConfig, setReminderConfig] = useState<ReminderConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [reminderLoading, setReminderLoading] = useState(false)
+  const [genderSaving, setGenderSaving] = useState(false)
+  const [passwordSheetOpen, setPasswordSheetOpen] = useState(false)
+  const [passwordCodeSending, setPasswordCodeSending] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const genderSheetTimerRef = useRef<number | null>(null)
+  const passwordSheetTimerRef = useRef<number | null>(null)
+  const {
+    remainingSeconds: passwordCodeCountdown,
+    resetCountdown: resetPasswordCodeCountdown,
+    startCountdown: startPasswordCodeCountdown
+  } = useCooldownCountdown()
+
+  useEffect(() => {
+    return () => {
+      if (genderSheetTimerRef.current !== null) {
+        window.clearTimeout(genderSheetTimerRef.current)
+      }
+      if (passwordSheetTimerRef.current !== null) {
+        window.clearTimeout(passwordSheetTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    setSelectedGender(currentUser?.gender ?? 'male')
+  }, [currentUser?.gender])
+
+  useEffect(() => {
+    if (!(location.state as HomeLocationState | null)?.promptGender) {
+      return
+    }
+
+    setSelectedGender(currentUser?.gender ?? 'male')
+    setGenderSheetMode('onboarding')
+    navigate(location.pathname, { replace: true })
+  }, [currentUser?.gender, location.pathname, location.state, navigate])
 
   useEffect(() => {
     let active = true
@@ -89,6 +145,64 @@ export function HomePage() {
     }
   }
 
+  async function handleGenderConfirm(nextGender: UserGender) {
+    if (!currentUser) {
+      return
+    }
+
+    if (currentUser.gender === nextGender) {
+      setGenderSheetMode(null)
+      return
+    }
+
+    setGenderSaving(true)
+
+    try {
+      const nextUser = await updateUserProfile({ gender: nextGender })
+      syncCurrentUser(nextUser)
+      setGenderSheetMode(null)
+      Toast.show({
+        content: `已设置为${getUserGenderLabel(nextGender)}`
+      })
+    } catch (error) {
+      Toast.show({ content: getErrorMessage(error, '性别设置保存失败') })
+    } finally {
+      setGenderSaving(false)
+    }
+  }
+
+  async function handleSendPasswordCode() {
+    setPasswordCodeSending(true)
+
+    try {
+      await sendPasswordChangeVerificationCode()
+      startPasswordCodeCountdown(60)
+      Toast.show({ content: '验证码已发送，请查看邮箱' })
+    } catch (error) {
+      Toast.show({ content: getErrorMessage(error, '验证码发送失败，请稍后再试') })
+    } finally {
+      setPasswordCodeSending(false)
+    }
+  }
+
+  async function handleUpdatePassword(payload: {
+    newPassword: string
+    verificationCode: string
+  }) {
+    setPasswordSaving(true)
+
+    try {
+      await updatePassword(payload)
+      resetPasswordCodeCountdown()
+      setPasswordSheetOpen(false)
+      Toast.show({ content: '密码已更新' })
+    } catch (error) {
+      Toast.show({ content: getErrorMessage(error, '密码更新失败') })
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
   return (
     <AppPage>
       <PageHeader
@@ -99,7 +213,7 @@ export function HomePage() {
         extra={
           <button
             type="button"
-            className="icon-button pressable"
+            className="icon-button icon-button--hero pressable"
             onClick={() => setSettingsOpen(true)}
           >
             <SetOutline />
@@ -182,7 +296,29 @@ export function HomePage() {
       <SettingsSheet
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        onOpenGender={() => {
+          setSettingsOpen(false)
+          setSelectedGender(currentUser?.gender ?? 'male')
+          if (genderSheetTimerRef.current !== null) {
+            window.clearTimeout(genderSheetTimerRef.current)
+          }
+          genderSheetTimerRef.current = window.setTimeout(() => {
+            setGenderSheetMode('settings')
+            genderSheetTimerRef.current = null
+          }, 140)
+        }}
+        onOpenPassword={() => {
+          setSettingsOpen(false)
+          if (passwordSheetTimerRef.current !== null) {
+            window.clearTimeout(passwordSheetTimerRef.current)
+          }
+          passwordSheetTimerRef.current = window.setTimeout(() => {
+            setPasswordSheetOpen(true)
+            passwordSheetTimerRef.current = null
+          }, 140)
+        }}
         userEmail={currentUser?.email ?? ''}
+        userGenderLabel={getUserGenderLabel(currentUser?.gender ?? 'male')}
         reminderEnabled={reminderConfig?.enabled ?? true}
         reminderLoading={reminderLoading}
         onReminderChange={handleReminderChange}
@@ -191,6 +327,32 @@ export function HomePage() {
           clearSession()
           Toast.show({ content: '已退出登录' })
         }}
+      />
+
+      <GenderSheet
+        open={genderSheetMode !== null}
+        title={genderSheetMode === 'onboarding' ? '选择性别' : '性别'}
+        value={selectedGender}
+        onValueChange={setSelectedGender}
+        loading={genderSaving}
+        confirmText={genderSheetMode === 'onboarding' ? '继续' : '保存'}
+        secondaryActionLabel={genderSheetMode === 'onboarding' ? '跳过' : undefined}
+        onSecondaryAction={() => setGenderSheetMode(null)}
+        onClose={() => setGenderSheetMode(null)}
+        onConfirm={handleGenderConfirm}
+      />
+
+      <PasswordSheet
+        open={passwordSheetOpen}
+        email={currentUser?.email ?? ''}
+        countdownSeconds={passwordCodeCountdown}
+        sendingCode={passwordCodeSending}
+        saving={passwordSaving}
+        onClose={() => setPasswordSheetOpen(false)}
+        onSendCode={() => {
+          void handleSendPasswordCode()
+        }}
+        onSubmit={handleUpdatePassword}
       />
     </AppPage>
   )

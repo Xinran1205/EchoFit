@@ -1,6 +1,9 @@
 FROM docker.m.daocloud.io/library/node:22-alpine AS build
 WORKDIR /app
 
+ARG VITE_DISABLE_PWA=false
+ENV VITE_DISABLE_PWA=$VITE_DISABLE_PWA
+
 COPY package.json package-lock.json ./
 RUN npm config set registry https://registry.npmmirror.com \
   && npm config set replace-registry-host always \

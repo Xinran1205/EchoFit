@@ -8,6 +8,7 @@ public enum ErrorCode {
     FORBIDDEN(40300),
     CONFLICT(40900),
     NOT_FOUND(40400),
+    TOO_MANY_REQUESTS(42900),
     INTERNAL_ERROR(50000);
 
     private final int code;

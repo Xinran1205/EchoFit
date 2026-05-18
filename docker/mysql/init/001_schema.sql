@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS app_user (
   email VARCHAR(191) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   nickname VARCHAR(64) NULL,
+  gender VARCHAR(16) NOT NULL DEFAULT 'male' COMMENT 'male, female',
   status TINYINT NOT NULL DEFAULT 1 COMMENT '1 active, 0 disabled',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -76,4 +77,3 @@ CREATE TABLE IF NOT EXISTS reminder_config (
 
   UNIQUE KEY uk_user_reminder (user_id, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-

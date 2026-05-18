@@ -4,11 +4,11 @@ services:
     container_name: echofit-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: training_echo
-      MYSQL_USER: training
-      MYSQL_PASSWORD: training123
-      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-training_echo}
+      MYSQL_USER: ${MYSQL_USER:-training}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-training123}
+      TZ: ${TZ:-Asia/Shanghai}
     ports:
       - "3306:3306"
     volumes:
@@ -24,6 +24,27 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: docker.m.daocloud.io/library/redis:7.4.2-alpine
+    container_name: echofit-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -33,14 +54,25 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      MYSQL_USER: training
-      MYSQL_PASSWORD: training123
-      JWT_SECRET: please-change-this-secret-at-least-32-bytes
+      MYSQL_USER: ${MYSQL_USER:-training}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-training123}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      JWT_SECRET: ${JWT_SECRET:-please-change-this-secret-at-least-32-bytes}
       CORS_ALLOWED_ORIGINS: http://localhost:*,http://127.0.0.1:*,http://[::1]:*
-      MAIL_ENABLED: "false"
-      TZ: Asia/Shanghai
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      TZ: ${TZ:-Asia/Shanghai}
     ports:
       - "8080:8080"
 
@@ -48,6 +80,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_DISABLE_PWA: "true"
     container_name: echofit-frontend
     restart: unless-stopped
     depends_on:
@@ -57,3 +91,4 @@ services:
 
 volumes:
   mysql_data:
+  redis_data:

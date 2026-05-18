@@ -26,6 +26,29 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: docker.m.daocloud.io/library/redis:7.4.2-alpine
+    container_name: echofit-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1"
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - echofit
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -36,6 +59,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
       MYSQL_HOST: 127.0.0.1
@@ -43,6 +68,10 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-training_echo}
       MYSQL_USER: ${MYSQL_USER:-training}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       CORS_ALLOWED_ORIGINS: http://${SERVER_HOST:?SERVER_HOST is required}
       MAIL_ENABLED: ${MAIL_ENABLED:-false}
@@ -69,6 +98,7 @@ services:
 
 volumes:
   mysql_data:
+  redis_data:
 
 networks:
   echofit:

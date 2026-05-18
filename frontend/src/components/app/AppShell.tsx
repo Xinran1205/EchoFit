@@ -1,8 +1,10 @@
-import { TabBar, DotLoading } from 'antd-mobile'
+import { startTransition } from 'react'
+import { DotLoading } from 'antd-mobile'
 import { AppOutline, CalendarOutline } from 'antd-mobile-icons'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/auth.store'
 import { AppCard } from './AppCard'
+import { AppLiquidTabBar } from './AppLiquidTabBar'
 import { AppPage } from './AppPage'
 
 const tabs = [
@@ -35,15 +37,15 @@ export function AppShell() {
     <div className="app-shell">
       <Outlet />
       {showTabBar ? (
-        <div className="app-tabbar">
-          <div className="app-page-inner">
-            <TabBar activeKey={location.pathname} onChange={(key) => navigate(key)} safeArea>
-              {tabs.map((tab) => (
-                <TabBar.Item key={tab.key} icon={tab.icon} title={tab.title} />
-              ))}
-            </TabBar>
-          </div>
-        </div>
+        <AppLiquidTabBar
+          activeKey={location.pathname}
+          tabs={tabs}
+          onChange={(key) => {
+            startTransition(() => {
+              navigate(key)
+            })
+          }}
+        />
       ) : null}
     </div>
   )

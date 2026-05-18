@@ -2,7 +2,10 @@ import { Dialog, List, Popup, Switch } from 'antd-mobile'
 
 type SettingsSheetProps = {
   open: boolean
+  onOpenGender: () => void
+  onOpenPassword: () => void
   userEmail: string
+  userGenderLabel: string
   reminderEnabled: boolean
   reminderLoading?: boolean
   onClose: () => void
@@ -12,7 +15,10 @@ type SettingsSheetProps = {
 
 export function SettingsSheet({
   open,
+  onOpenGender,
+  onOpenPassword,
   userEmail,
+  userGenderLabel,
   reminderEnabled,
   reminderLoading = false,
   onClose,
@@ -27,12 +33,19 @@ export function SettingsSheet({
       onMaskClick={onClose}
     >
       <div className="sheet-body settings-sheet">
-        <div className="section-kicker">设置</div>
-        <div className="card-title" style={{ marginTop: '8px' }}>
-          账户与提醒
-        </div>
+        <div className="card-title">设置</div>
         <List style={{ marginTop: '14px' }}>
           <List.Item description={userEmail}>账号</List.Item>
+          <List.Item
+            clickable
+            extra={<span className="settings-sheet__value">{userGenderLabel}</span>}
+            onClick={onOpenGender}
+          >
+            性别
+          </List.Item>
+          <List.Item clickable onClick={onOpenPassword}>
+            修改密码
+          </List.Item>
           <List.Item
             extra={
               <Switch

@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+var disablePwa = process.env.VITE_DISABLE_PWA === 'true';
 export default defineConfig({
     plugins: [
         react(),
         VitePWA({
+            disable: disablePwa,
             registerType: 'autoUpdate',
             includeAssets: [
                 'favicon.ico',

@@ -96,7 +96,6 @@ export function EchoPage() {
               <div className="echo-stage__halo">
                 <img src="/apple-touch-icon.png" alt="EchoFit" />
               </div>
-              <div className="echo-stage__eyebrow">记录完成</div>
               <div className="echo-stage__title">训练已收进今天</div>
               <div className="echo-stage__meta">
                 一次训练，一次回声。接下来只需要安静看完它。

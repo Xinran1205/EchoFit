@@ -3,8 +3,13 @@ spring:
     url: jdbc:mysql://localhost:3306/training_echo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: training
     password: training123
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
 
 app:
   mail:
     enabled: false
-

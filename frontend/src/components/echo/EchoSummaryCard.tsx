@@ -14,10 +14,7 @@ export function EchoSummaryCard({ record }: EchoSummaryCardProps) {
   return (
     <AppCard>
       <div className="section-kicker">训练摘要</div>
-      <div className="card-title" style={{ marginTop: '8px' }}>
-        这次训练已记录
-      </div>
-      <div className="app-muted" style={{ marginTop: '10px' }}>
+      <div className="app-muted" style={{ marginTop: '8px' }}>
         {formatDisplayDate(record.date)} · {formatDuration(record.durationMinutes)}
       </div>
       <div className="pill-list" style={{ marginTop: '16px' }}>

@@ -13,6 +13,8 @@ backend/.mvn/wrapper/maven-wrapper.jar
 .env
 .env.*
 !.env.example
+deploy/local.env
+deploy/aliyun.env
 
 # IDE / OS
 .idea/
@@ -23,3 +25,13 @@ Desktop.ini
 # Docker
 docker/mysql/data/
 
+# Codex / AI runtime artifacts
+.codex-artifacts/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Common local artifacts
+node_modules/
+dist/
+.DS_Store

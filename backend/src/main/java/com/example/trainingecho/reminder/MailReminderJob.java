@@ -5,28 +5,38 @@ import com.example.trainingecho.mail.EmailSender;
 import com.example.trainingecho.user.UserEntity;
 import com.example.trainingecho.user.UserMapper;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class MailReminderJob {
+    private static final Logger log = LoggerFactory.getLogger(MailReminderJob.class);
+    private static final String REMINDER_SUBJECT = "EchoFit 训练提醒";
+    private static final String REMINDER_CONTENT = "如果今天训练了，别忘了回来记录。";
 
-    private final ReminderConfigMapper reminderConfigMapper;
+    private final ReminderService reminderService;
     private final UserMapper userMapper;
     private final EmailSender emailSender;
     private final boolean mailEnabled;
+    private final String senderAddress;
 
     public MailReminderJob(
-        ReminderConfigMapper reminderConfigMapper,
+        ReminderService reminderService,
         UserMapper userMapper,
         EmailSender emailSender,
-        @Value("${app.mail.enabled:false}") boolean mailEnabled
+        @Value("${app.mail.enabled:false}") boolean mailEnabled,
+        @Value("${app.mail.from:}") String configuredFrom,
+        @Value("${spring.mail.username:}") String mailUsername
     ) {
-        this.reminderConfigMapper = reminderConfigMapper;
+        this.reminderService = reminderService;
         this.userMapper = userMapper;
         this.emailSender = emailSender;
         this.mailEnabled = mailEnabled;
+        this.senderAddress = StringUtils.hasText(configuredFrom) ? configuredFrom : mailUsername;
     }
 
     @Scheduled(
@@ -38,16 +48,34 @@ public class MailReminderJob {
             return;
         }
 
-        LambdaQueryWrapper<ReminderConfigEntity> queryWrapper = new LambdaQueryWrapper<ReminderConfigEntity>()
-            .eq(ReminderConfigEntity::getEnabled, 1);
-        List<ReminderConfigEntity> configs = reminderConfigMapper.selectList(queryWrapper);
-        for (ReminderConfigEntity config : configs) {
-            UserEntity user = userMapper.selectById(config.getUserId());
-            if (user != null && user.getStatus() != null && user.getStatus() == 1) {
+        LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
+            .eq(UserEntity::getStatus, 1);
+        List<UserEntity> users = userMapper.selectList(queryWrapper);
+        log.info("Dispatching daily reminder emails. sender={}, candidates={}", senderAddress, users.size());
+
+        for (UserEntity user : users) {
+            if (!StringUtils.hasText(user.getEmail())) {
+                continue;
+            }
+
+            ReminderConfigEntity config = reminderService.getOrCreateConfig(user.getId());
+            if (config.getEnabled() == null || config.getEnabled() != 1) {
+                continue;
+            }
+
+            try {
                 emailSender.sendText(
                     user.getEmail(),
-                    "EchoFit 训练提醒",
-                    "今天如果有训练，别忘了回来记一下。"
+                    REMINDER_SUBJECT,
+                    REMINDER_CONTENT
+                );
+                log.info("Reminder email sent. userId={}, email={}", user.getId(), user.getEmail());
+            } catch (Exception exception) {
+                log.error(
+                    "Failed to send reminder email. userId={}, email={}",
+                    user.getId(),
+                    user.getEmail(),
+                    exception
                 );
             }
         }

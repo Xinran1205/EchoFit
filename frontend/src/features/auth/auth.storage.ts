@@ -1,6 +1,10 @@
-import type { AuthSession, UserProfile } from './auth.types'
+import type { AuthSession, UserGender, UserProfile } from './auth.types'
 
 const AUTH_STORAGE_KEY = 'echofit.auth'
+
+function normalizeGender(value: unknown): UserGender {
+  return value === 'female' ? 'female' : 'male'
+}
 
 function isUserProfile(value: unknown): value is UserProfile {
   if (!value || typeof value !== 'object') {
@@ -30,7 +34,10 @@ export function readStoredSession(): AuthSession | null {
 
     return {
       token: parsed.token,
-      user: parsed.user
+      user: {
+        ...parsed.user,
+        gender: normalizeGender((parsed.user as Partial<UserProfile>).gender)
+      }
     }
   } catch {
     return null

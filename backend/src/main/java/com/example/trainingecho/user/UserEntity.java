@@ -16,6 +16,7 @@ public class UserEntity {
     private String email;
     private String passwordHash;
     private String nickname;
+    private String gender;
     private Integer status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

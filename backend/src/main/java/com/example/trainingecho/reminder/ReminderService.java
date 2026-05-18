@@ -40,6 +40,7 @@ public class ReminderService {
         return toResponse(entity);
     }
 
+    @Transactional
     public ReminderConfigEntity getOrCreateConfig(Long userId) {
         LambdaQueryWrapper<ReminderConfigEntity> queryWrapper = new LambdaQueryWrapper<ReminderConfigEntity>()
             .eq(ReminderConfigEntity::getUserId, userId)
