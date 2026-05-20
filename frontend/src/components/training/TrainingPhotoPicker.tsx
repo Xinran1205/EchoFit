@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Toast } from 'antd-mobile'
 import {
   TRAINING_PHOTO_MAX_COUNT,
   TRAINING_PHOTO_MAX_FILE_SIZE_BYTES
 } from '../../features/training/training.constants'
+import { optimizeTrainingPhoto } from '../../features/training/training.image'
 import { TrainingPhotoAddGlyph, TrainingPhotoGrid } from './TrainingPhotoGrid'
 
 export type LocalTrainingPhoto = {
@@ -39,6 +40,7 @@ export function TrainingPhotoPicker({
 }: TrainingPhotoPickerProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const trackedUrlsRef = useRef<Set<string>>(new Set())
+  const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
     const nextUrls = new Set(value.map((item) => item.previewUrl))
@@ -62,8 +64,8 @@ export function TrainingPhotoPicker({
     }
   }, [])
 
-  function handleFilesSelected(files: File[]) {
-    if (disabled) {
+  async function handleFilesSelected(files: File[]) {
+    if (disabled || processing) {
       return
     }
 
@@ -73,62 +75,41 @@ export function TrainingPhotoPicker({
       return
     }
 
-    const existingSignatures = new Set(
-      value.map((item) => `${item.file.name}-${item.file.size}-${item.file.lastModified}`)
-    )
-    const nextItems: LocalTrainingPhoto[] = []
-    let warningMessage = ''
-
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        warningMessage ||= '只能上传图片文件'
-        continue
-      }
-
-      if (file.size > TRAINING_PHOTO_MAX_FILE_SIZE_BYTES) {
-        warningMessage ||= `单张图片不能超过 ${formatMaxSizeLabel()}`
-        continue
-      }
-
-      const signature = `${file.name}-${file.size}-${file.lastModified}`
-      if (existingSignatures.has(signature)) {
-        warningMessage ||= '相同照片已经添加过了'
-        continue
-      }
-
-      existingSignatures.add(signature)
-      nextItems.push({
-        key: buildPhotoKey(file),
-        file,
-        previewUrl: URL.createObjectURL(file)
-      })
-
-      if (nextItems.length >= remainingCount) {
-        break
-      }
+    const nextFile = files[0]
+    if (!nextFile) {
+      return
     }
 
-    if (files.length > remainingCount && nextItems.length === remainingCount) {
-      warningMessage ||= `最多只能保存 ${maxCount} 张训练照片`
+    if (!nextFile.type.startsWith('image/')) {
+      Toast.show({ content: '只能上传图片文件' })
+      return
     }
 
-    if (nextItems.length > 0) {
-      onChange([...value, ...nextItems])
-    }
+    setProcessing(true)
 
-    if (warningMessage) {
-      Toast.show({ content: warningMessage })
+    try {
+      const optimizedFile = await optimizeTrainingPhoto(nextFile)
+      if (optimizedFile.size > TRAINING_PHOTO_MAX_FILE_SIZE_BYTES) {
+        Toast.show({ content: `单张图片不能超过 ${formatMaxSizeLabel()}` })
+        return
+      }
+
+      onChange([
+        {
+          key: buildPhotoKey(optimizedFile),
+          file: optimizedFile,
+          previewUrl: URL.createObjectURL(optimizedFile)
+        }
+      ])
+    } catch {
+      Toast.show({ content: '图片处理失败，请换一张试试' })
+    } finally {
+      setProcessing(false)
     }
   }
 
   return (
     <div className="training-photo-picker">
-      <div className="training-photo-picker__meta">
-        <span className="training-photo-picker__count">
-          已选 {value.length} / {maxCount} 张
-        </span>
-      </div>
-
       <TrainingPhotoGrid
         items={value.map((item) => ({
           key: item.key,
@@ -139,18 +120,21 @@ export function TrainingPhotoPicker({
         onDelete={(photoKey) => {
           onChange(value.filter((item) => item.key !== photoKey))
         }}
+        previewMode="none"
         addTile={
           value.length < maxCount ? (
             <button
               type="button"
               className="training-photo-add pressable"
-              disabled={disabled}
+              disabled={disabled || processing}
               onClick={() => inputRef.current?.click()}
             >
               <span className="training-photo-add__icon">
                 <TrainingPhotoAddGlyph />
               </span>
-              <span className="training-photo-add__title">添加照片</span>
+              <span className="training-photo-add__title">
+                {processing ? '处理中' : '添加照片'}
+              </span>
             </button>
           ) : null
         }
@@ -161,11 +145,10 @@ export function TrainingPhotoPicker({
         hidden
         type="file"
         accept="image/*"
-        multiple
         onChange={(event) => {
           const files = Array.from(event.target.files ?? [])
           event.target.value = ''
-          handleFilesSelected(files)
+          void handleFilesSelected(files)
         }}
       />
     </div>

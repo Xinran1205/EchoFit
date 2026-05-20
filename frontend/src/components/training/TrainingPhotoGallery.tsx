@@ -9,17 +9,18 @@ type TrainingPhotoGalleryProps = {
   compact?: boolean
   deletable?: boolean
   onDeletePhoto?: (photoId: string) => void
+  previewMode?: 'external' | 'none' | 'viewer'
 }
 
 export function TrainingPhotoGallery({
   photos,
   compact = false,
   deletable = false,
-  onDeletePhoto
+  onDeletePhoto,
+  previewMode = 'viewer'
 }: TrainingPhotoGalleryProps) {
   const [items, setItems] = useState<TrainingPhotoGridItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [failedCount, setFailedCount] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -28,12 +29,10 @@ export function TrainingPhotoGallery({
     async function loadPhotos() {
       if (photos.length === 0) {
         setItems([])
-        setFailedCount(0)
         return
       }
 
       setLoading(true)
-      setFailedCount(0)
 
       try {
         const results = await Promise.allSettled(
@@ -57,10 +56,8 @@ export function TrainingPhotoGallery({
         const nextItems = results.flatMap((result) =>
           result.status === 'fulfilled' ? [result.value] : []
         )
-        const nextFailedCount = results.length - nextItems.length
 
         setItems(nextItems)
-        setFailedCount(nextFailedCount)
       } finally {
         if (active) {
           setLoading(false)
@@ -104,12 +101,8 @@ export function TrainingPhotoGallery({
         compact={compact}
         deletable={deletable}
         onDelete={onDeletePhoto}
+        previewMode={previewMode}
       />
-      {failedCount > 0 ? (
-        <div className="training-photo-gallery__status">
-          有 {failedCount} 张照片暂时没加载出来。
-        </div>
-      ) : null}
     </div>
   )
 }

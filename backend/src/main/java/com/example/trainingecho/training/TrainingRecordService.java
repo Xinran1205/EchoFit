@@ -51,7 +51,7 @@ public class TrainingRecordService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final int MAX_PHOTO_COUNT = 4;
+    private static final int MAX_PHOTO_COUNT = 1;
     private static final long MAX_PHOTO_SIZE_BYTES = 15L * 1024 * 1024;
 
     private final TrainingRecordMapper trainingRecordMapper;
@@ -426,9 +426,9 @@ public class TrainingRecordService {
         if (photoCount > MAX_PHOTO_COUNT) {
             throw new BizException(
                 ErrorCode.VALIDATION_ERROR,
-                "最多只能保存 4 张训练照片",
-                HttpStatus.BAD_REQUEST
-            );
+                    "最多只能保存 1 张训练照片",
+                    HttpStatus.BAD_REQUEST
+                );
         }
     }
 

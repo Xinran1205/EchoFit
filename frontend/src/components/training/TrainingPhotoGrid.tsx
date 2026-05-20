@@ -15,6 +15,7 @@ type TrainingPhotoGridProps = {
   compact?: boolean
   deletable?: boolean
   onDelete?: (key: string) => void
+  previewMode?: 'external' | 'none' | 'viewer'
 }
 
 export function TrainingPhotoGrid({
@@ -23,7 +24,8 @@ export function TrainingPhotoGrid({
   className,
   compact = false,
   deletable = false,
-  onDelete
+  onDelete,
+  previewMode = 'viewer'
 }: TrainingPhotoGridProps) {
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerIndex, setViewerIndex] = useState(0)
@@ -39,22 +41,37 @@ export function TrainingPhotoGrid({
         ]
           .filter(Boolean)
           .join(' ')}
-      >
+        >
         {items.map((item, index) => (
           <div key={item.key} className="training-photo-thumb-shell">
-            <button
-              type="button"
-              className="training-photo-thumb pressable"
-              onClick={() => {
-                setViewerIndex(index)
-                setViewerOpen(true)
-              }}
-            >
-              <img src={item.url} alt={item.label ?? '训练照片'} loading="lazy" />
-              <div className="training-photo-thumb__veil">
-                <span className="training-photo-thumb__action">查看大图</span>
+            {previewMode === 'viewer' ? (
+              <button
+                type="button"
+                className="training-photo-thumb pressable"
+                onClick={() => {
+                  setViewerIndex(index)
+                  setViewerOpen(true)
+                }}
+              >
+                <img src={item.url} alt={item.label ?? '训练照片'} loading="lazy" />
+                <div className="training-photo-thumb__veil">
+                  <span className="training-photo-thumb__action">查看大图</span>
+                </div>
+              </button>
+            ) : previewMode === 'external' ? (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="training-photo-thumb"
+              >
+                <img src={item.url} alt={item.label ?? '训练照片'} loading="lazy" />
+              </a>
+            ) : (
+              <div className="training-photo-thumb training-photo-thumb--static">
+                <img src={item.url} alt={item.label ?? '训练照片'} loading="lazy" />
               </div>
-            </button>
+            )}
             {deletable && onDelete ? (
               <button
                 type="button"
@@ -74,7 +91,7 @@ export function TrainingPhotoGrid({
       </div>
 
       <ImageViewer.Multi
-        visible={viewerOpen}
+        visible={previewMode === 'viewer' && viewerOpen}
         images={images}
         defaultIndex={viewerIndex}
         maxZoom="auto"
@@ -82,9 +99,11 @@ export function TrainingPhotoGrid({
         onIndexChange={setViewerIndex}
         renderFooter={(_, index) => (
           <div className="training-photo-viewer__footer">
-            <span>{index + 1}</span>
-            <span className="training-photo-viewer__divider">/</span>
-            <span>{images.length}</span>
+            <div className="training-photo-viewer__meta">
+              <span>{index + 1}</span>
+              <span className="training-photo-viewer__divider">/</span>
+              <span>{images.length}</span>
+            </div>
           </div>
         )}
       />

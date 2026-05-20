@@ -182,6 +182,11 @@ export function RecordPage() {
       return
     }
 
+    if (keptPhotoIds.length + newPhotos.length > TRAINING_PHOTO_MAX_COUNT) {
+      Toast.show({ content: '只能保留 1 张训练照片' })
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -299,7 +304,6 @@ export function RecordPage() {
             <div className="record-photo-stack">
               <div className="record-photo-stack__header">
                 <span className="record-photo-stack__title">已保存照片</span>
-                <span className="record-photo-stack__hint">点右上角可移除</span>
               </div>
               <TrainingPhotoGallery
                 photos={visibleExistingPhotos}
@@ -307,6 +311,7 @@ export function RecordPage() {
                 onDeletePhoto={(photoId) => {
                   setKeptPhotoIds((current) => current.filter((id) => id !== photoId))
                 }}
+                previewMode="none"
               />
             </div>
           ) : null}
@@ -319,11 +324,7 @@ export function RecordPage() {
                 value={newPhotos}
                 onChange={setNewPhotos}
               />
-            ) : (
-              <div className="training-photo-gallery__status">
-                如需替换，请先移除一张已保存照片。
-              </div>
-            )}
+            ) : null}
           </div>
         </AppCard>
       </section>

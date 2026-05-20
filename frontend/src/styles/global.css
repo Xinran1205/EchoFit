@@ -761,6 +761,10 @@ button {
   box-shadow: 0 16px 28px rgba(22, 33, 47, 0.08);
 }
 
+.training-photo-thumb--static {
+  pointer-events: none;
+}
+
 .training-photo-thumb img {
   display: block;
   width: 100%;
@@ -808,24 +812,6 @@ button {
 .training-photo-thumb__delete svg {
   width: 18px;
   height: 18px;
-}
-
-.training-photo-picker__meta {
-  display: grid;
-  gap: 6px;
-}
-
-.training-photo-picker__count {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(49, 70, 93, 0.08);
-  color: var(--app-accent);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .training-photo-add {
@@ -880,10 +866,16 @@ button {
   -webkit-backdrop-filter: blur(16px);
 }
 
+.training-photo-viewer__meta {
+  display: inline-flex;
+  align-items: center;
+}
+
 .training-photo-viewer__divider {
   margin: 0 6px;
   opacity: 0.56;
 }
+
 
 .echo-stage {
   display: grid;

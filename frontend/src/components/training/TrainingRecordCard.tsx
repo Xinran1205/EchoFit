@@ -43,9 +43,8 @@ export function TrainingRecordCard({
         <div className="record-photo-block">
           <div className="record-photo-block__header">
             <span className="record-photo-block__title">训练照片</span>
-            <span className="record-photo-block__count">{record.photos.length} 张</span>
           </div>
-          <TrainingPhotoGallery photos={record.photos} compact />
+          <TrainingPhotoGallery photos={record.photos} compact previewMode="external" />
         </div>
       ) : null}
 
