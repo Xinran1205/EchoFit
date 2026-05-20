@@ -7,6 +7,11 @@ import { AppPage } from '../../components/app/AppPage'
 import { BottomSubmitBar } from '../../components/app/BottomSubmitBar'
 import { PageHeader } from '../../components/app/PageHeader'
 import { DurationPickerField } from '../../components/training/DurationPickerField'
+import {
+  type LocalTrainingPhoto,
+  TrainingPhotoPicker
+} from '../../components/training/TrainingPhotoPicker'
+import { TrainingPhotoGallery } from '../../components/training/TrainingPhotoGallery'
 import { TrainingPartSelector } from '../../components/training/TrainingPartSelector'
 import { TrainingStatusSelector } from '../../components/training/TrainingStatusSelector'
 import { WeightPickerField } from '../../components/training/WeightPickerField'
@@ -21,11 +26,17 @@ import type {
   TrainingPart,
   TrainingRecord
 } from '../../features/training/training.types'
+import { TRAINING_PHOTO_MAX_COUNT } from '../../features/training/training.constants'
 import { getErrorMessage } from '../../lib/api'
 import { formatDisplayDate, formatWeekday } from '../../utils/date'
 
 type RecordPageLocationState = {
   record?: TrainingRecord
+}
+
+function buildLogReturnPath(date: string) {
+  const searchParams = new URLSearchParams({ date })
+  return `/log?${searchParams.toString()}`
 }
 
 export function RecordPage() {
@@ -35,6 +46,7 @@ export function RecordPage() {
   const [searchParams] = useSearchParams()
   const locationState = location.state as RecordPageLocationState | null
   const source = searchParams.get('source') ?? 'home'
+  const logDate = searchParams.get('logDate')
   const isEditing = Boolean(recordId)
   const [existingRecord, setExistingRecord] = useState<TrainingRecord | null>(
     locationState?.record ?? null
@@ -49,6 +61,7 @@ export function RecordPage() {
     : todayKey
   const requestedFutureDate = !isEditing && dayjs(normalizedRecordDate).isAfter(today, 'day')
   const recordDate = requestedFutureDate ? todayKey : normalizedRecordDate
+  const logReturnDate = logDate ?? recordDate
 
   const [parts, setParts] = useState<TrainingPart[]>(existingRecord?.parts ?? [])
   const [durationMinutes, setDurationMinutes] = useState<number | undefined>(
@@ -59,6 +72,10 @@ export function RecordPage() {
     existingRecord?.weightKg ?? undefined
   )
   const [note, setNote] = useState(existingRecord?.note ?? '')
+  const [keptPhotoIds, setKeptPhotoIds] = useState<string[]>(
+    existingRecord?.photos.map((photo) => photo.id) ?? []
+  )
+  const [newPhotos, setNewPhotos] = useState<LocalTrainingPhoto[]>([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -80,6 +97,7 @@ export function RecordPage() {
     setMood(existingRecord.mood)
     setWeightKg(existingRecord.weightKg ?? undefined)
     setNote(existingRecord.note ?? '')
+    setKeptPhotoIds(existingRecord.photos.map((photo) => photo.id))
   }, [existingRecord])
 
   useEffect(() => {
@@ -174,10 +192,13 @@ export function RecordPage() {
           mood,
           note: note.trim() || undefined,
           weightKg: weightKg ?? undefined
+        }, {
+          keptPhotoIds,
+          newPhotos: newPhotos.map((photo) => photo.file)
         })
 
         Toast.show({ content: '记录已更新' })
-        navigate('/log', { replace: true })
+        navigate(source === 'log' ? buildLogReturnPath(logReturnDate) : '/log', { replace: true })
         return
       }
 
@@ -188,9 +209,14 @@ export function RecordPage() {
         mood,
         note: note.trim() || undefined,
         weightKg: weightKg ?? undefined
-      })
+      }, newPhotos.map((photo) => photo.file))
 
-      navigate(`/echo/${created.recordId}?source=${source}`, { replace: true })
+      const nextSearchParams = new URLSearchParams({ source })
+      if (source === 'log') {
+        nextSearchParams.set('logDate', logReturnDate)
+      }
+
+      navigate(`/echo/${created.recordId}?${nextSearchParams.toString()}`, { replace: true })
     } catch (error) {
       Toast.show({
         content: getErrorMessage(error, isEditing ? '记录保存失败' : '记录创建失败')
@@ -199,6 +225,10 @@ export function RecordPage() {
       setSaving(false)
     }
   }
+
+  const visibleExistingPhotos =
+    existingRecord?.photos.filter((photo) => keptPhotoIds.includes(photo.id)) ?? []
+  const newPhotoLimit = Math.max(TRAINING_PHOTO_MAX_COUNT - keptPhotoIds.length, 0)
 
   if (loadingRecord) {
     return (
@@ -258,14 +288,60 @@ export function RecordPage() {
 
       <section className="app-section">
         <AppCard className="record-section-card">
+          <div className="record-section-card__header">
+            <div className="record-section-card__title-row">
+              <div className="card-title">训练照片</div>
+              <span className="summary-chip summary-chip--soft">可选</span>
+            </div>
+          </div>
+
+          {visibleExistingPhotos.length > 0 ? (
+            <div className="record-photo-stack">
+              <div className="record-photo-stack__header">
+                <span className="record-photo-stack__title">已保存照片</span>
+                <span className="record-photo-stack__hint">点右上角可移除</span>
+              </div>
+              <TrainingPhotoGallery
+                photos={visibleExistingPhotos}
+                deletable
+                onDeletePhoto={(photoId) => {
+                  setKeptPhotoIds((current) => current.filter((id) => id !== photoId))
+                }}
+              />
+            </div>
+          ) : null}
+
+          <div className="record-photo-stack">
+            {newPhotoLimit > 0 || newPhotos.length > 0 || !isEditing ? (
+              <TrainingPhotoPicker
+                disabled={newPhotoLimit === 0}
+                maxCount={newPhotoLimit}
+                value={newPhotos}
+                onChange={setNewPhotos}
+              />
+            ) : (
+              <div className="training-photo-gallery__status">
+                如需替换，请先移除一张已保存照片。
+              </div>
+            )}
+          </div>
+        </AppCard>
+      </section>
+
+      <section className="app-section">
+        <AppCard className="record-section-card">
           <WeightPickerField value={weightKg} onChange={setWeightKg} />
         </AppCard>
       </section>
 
       <section className="app-section">
         <AppCard className="record-section-card">
-          <div className="card-title">备注</div>
-          <div className="record-helper">只留下一句对今天有用的补充就够了。</div>
+          <div className="record-section-card__header">
+            <div className="record-section-card__title-row">
+              <div className="card-title">备注</div>
+              <span className="summary-chip summary-chip--soft">可选</span>
+            </div>
+          </div>
           <TextArea
             rows={4}
             maxLength={100}

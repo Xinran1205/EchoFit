@@ -2,16 +2,20 @@ package com.example.trainingecho.training;
 
 import com.example.trainingecho.auth.SecurityUtils;
 import com.example.trainingecho.common.ApiResponse;
+import com.example.trainingecho.training.dto.CreateRestDayRequest;
 import com.example.trainingecho.training.dto.CreateTrainingRecordRequest;
 import com.example.trainingecho.training.dto.CreateTrainingRecordResponse;
 import com.example.trainingecho.training.dto.LatestWeightResponse;
 import com.example.trainingecho.training.dto.MonthRecordsResponse;
+import com.example.trainingecho.training.dto.RestDayResponse;
 import com.example.trainingecho.training.dto.TrainingRecordResponse;
 import com.example.trainingecho.training.dto.UpdateTrainingRecordRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,8 +23,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -33,21 +39,34 @@ public class TrainingController {
         this.trainingRecordService = trainingRecordService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<CreateTrainingRecordResponse> createRecord(
-        @Valid @RequestBody CreateTrainingRecordRequest request
+        @RequestPart("payload") @Valid CreateTrainingRecordRequest request,
+        @RequestPart(value = "photos", required = false) List<MultipartFile> photos
     ) {
         Long userId = SecurityUtils.requireCurrentUser().userId();
-        return ApiResponse.success(trainingRecordService.createRecord(userId, request));
+        return ApiResponse.success(trainingRecordService.createRecord(userId, request, photos));
     }
 
-    @PutMapping("/{recordId}")
+    @PutMapping(path = "/{recordId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<TrainingRecordResponse> updateRecord(
         @PathVariable String recordId,
-        @Valid @RequestBody UpdateTrainingRecordRequest request
+        @RequestPart("payload") @Valid UpdateTrainingRecordRequest request,
+        @RequestParam(value = "keptPhotoIds", required = false) List<String> keptPhotoIds,
+        @RequestPart(value = "photos", required = false) List<MultipartFile> photos
     ) {
         Long userId = SecurityUtils.requireCurrentUser().userId();
-        return ApiResponse.success(trainingRecordService.updateRecord(userId, recordId, request));
+        return ApiResponse.success(
+            trainingRecordService.updateRecord(userId, recordId, request, keptPhotoIds, photos)
+        );
+    }
+
+    @PostMapping("/rest-days")
+    public ApiResponse<RestDayResponse> createRestDay(
+        @Valid @RequestBody CreateRestDayRequest request
+    ) {
+        Long userId = SecurityUtils.requireCurrentUser().userId();
+        return ApiResponse.success(trainingRecordService.createRestDay(userId, request));
     }
 
     @GetMapping("/by-date")

@@ -1,6 +1,6 @@
 import { startTransition } from 'react'
 import { DotLoading } from 'antd-mobile'
-import { AppOutline, CalendarOutline } from 'antd-mobile-icons'
+import { AppOutline, CalendarOutline, HistogramOutline } from 'antd-mobile-icons'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/auth.store'
 import { AppCard } from './AppCard'
@@ -9,14 +9,15 @@ import { AppPage } from './AppPage'
 
 const tabs = [
   { key: '/', title: '首页', icon: <AppOutline /> },
-  { key: '/log', title: '日志', icon: <CalendarOutline /> }
+  { key: '/log', title: '日志', icon: <CalendarOutline /> },
+  { key: '/insights', title: '洞察', icon: <HistogramOutline /> }
 ]
 
 export function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const status = useAuthStore((state) => state.status)
-  const showTabBar = location.pathname === '/' || location.pathname === '/log'
+  const showTabBar = ['/', '/log', '/insights'].includes(location.pathname)
 
   if (status === 'checking') {
     return (

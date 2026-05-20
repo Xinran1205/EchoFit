@@ -6,6 +6,7 @@ import {
 } from '../../features/training/training.dictionary'
 import { formatDisplayDate, formatDuration, formatWeekday } from '../../utils/date'
 import { AppCard } from '../app/AppCard'
+import { TrainingPhotoGallery } from './TrainingPhotoGallery'
 
 type TrainingRecordCardProps = {
   record: TrainingRecord
@@ -37,6 +38,16 @@ export function TrainingRecordCard({
           ))}
         </div>
       </div>
+
+      {record.photos.length > 0 ? (
+        <div className="record-photo-block">
+          <div className="record-photo-block__header">
+            <span className="record-photo-block__title">训练照片</span>
+            <span className="record-photo-block__count">{record.photos.length} 张</span>
+          </div>
+          <TrainingPhotoGallery photos={record.photos} compact />
+        </div>
+      ) : null}
 
       <div className="detail-list">
         <div>状态：{getTrainingMoodLabel(record.mood)}</div>

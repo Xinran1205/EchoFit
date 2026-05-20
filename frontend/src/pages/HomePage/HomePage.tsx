@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, DotLoading, Toast } from 'antd-mobile'
+import { Button, Dialog, DotLoading, TextArea, Toast } from 'antd-mobile'
 import { SetOutline } from 'antd-mobile-icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AppCard } from '../../components/app/AppCard'
@@ -8,9 +8,7 @@ import { PageHeader } from '../../components/app/PageHeader'
 import { GenderSheet } from '../../components/settings/GenderSheet'
 import { PasswordSheet } from '../../components/settings/PasswordSheet'
 import { SettingsSheet } from '../../components/settings/SettingsSheet'
-import {
-  getUserGenderLabel
-} from '../../features/auth/auth.dictionary'
+import { getUserGenderLabel } from '../../features/auth/auth.dictionary'
 import {
   sendPasswordChangeVerificationCode,
   updatePassword,
@@ -25,7 +23,10 @@ import {
   getTrainingPartLabel,
   trainingPartOptions
 } from '../../features/training/training.dictionary'
-import { getHomeSummary } from '../../features/training/training.api'
+import {
+  createRestDay,
+  getHomeSummary
+} from '../../features/training/training.api'
 import type { HomeSummary } from '../../features/training/training.types'
 import { getErrorMessage } from '../../lib/api'
 import { formatDisplayDate, formatDuration, formatWeekday } from '../../utils/date'
@@ -52,6 +53,9 @@ export function HomePage() {
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false)
   const [passwordCodeSending, setPasswordCodeSending] = useState(false)
   const [passwordSaving, setPasswordSaving] = useState(false)
+  const [restDialogOpen, setRestDialogOpen] = useState(false)
+  const [restSaving, setRestSaving] = useState(false)
+  const [restNoteDraft, setRestNoteDraft] = useState('')
   const genderSheetTimerRef = useRef<number | null>(null)
   const passwordSheetTimerRef = useRef<number | null>(null)
   const {
@@ -123,6 +127,11 @@ export function HomePage() {
       active = false
     }
   }, [])
+
+  async function refreshHomeSummary() {
+    const nextSummary = await getHomeSummary()
+    setSummary(nextSummary)
+  }
 
   async function handleReminderChange(enabled: boolean) {
     if (!reminderConfig) {
@@ -203,13 +212,34 @@ export function HomePage() {
     }
   }
 
+  async function handleCreateRestDay() {
+    const targetDate = summary?.today ?? new Date().toISOString().slice(0, 10)
+    setRestSaving(true)
+
+    try {
+      await createRestDay({
+        date: targetDate,
+        note: restNoteDraft.trim() || undefined
+      })
+      await refreshHomeSummary()
+      setRestDialogOpen(false)
+      setRestNoteDraft('')
+      Toast.show({ content: '今天已标记为休息日' })
+    } catch (error) {
+      Toast.show({ content: getErrorMessage(error, '休息日保存失败') })
+    } finally {
+      setRestSaving(false)
+    }
+  }
+
+  const todayEntryType = summary?.todayEntryType ?? null
+  const todayDate = summary?.today ?? new Date().toISOString().slice(0, 10)
+
   return (
     <AppPage>
       <PageHeader
         title="今天"
-        subtitle={
-          summary ? `${formatDisplayDate(summary.today)} ${formatWeekday(summary.today)}` : undefined
-        }
+        subtitle={summary ? `${formatDisplayDate(summary.today)} ${formatWeekday(summary.today)}` : undefined}
         extra={
           <button
             type="button"
@@ -226,7 +256,7 @@ export function HomePage() {
           <div className="summary-card__header">
             <div className="card-title">最近 7 天</div>
             {summary ? (
-              <span className="summary-chip">{summary.last7Days.trainingDays} 天有记录</span>
+              <span className="summary-chip">{summary.last7Days.trainingDays} 天有训练记录</span>
             ) : null}
           </div>
 
@@ -267,31 +297,132 @@ export function HomePage() {
       </section>
 
       <section className="app-section">
-        <AppCard className="today-card">
-          <div className="today-card__message">
-            {summary?.todayRecorded
-              ? '今天的训练已经安静地留在这里了。'
-              : '如果今天练完了，现在就把这次训练记下来。'}
-          </div>
+        <AppCard
+          className={[
+            'today-card',
+            !summary?.todayRecorded ? 'today-card--actionable' : '',
+            todayEntryType === 'rest' ? 'today-card--resting' : ''
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <div className="today-card__wave" />
 
-          {!summary?.todayRecorded ? (
-            <Button
-              block
-              color="primary"
-              size="large"
-              className="app-primary-button"
-              disabled={loading}
-              style={{ marginTop: '18px' }}
-              onClick={() => {
-                const targetDate = summary?.today ?? new Date().toISOString().slice(0, 10)
-                navigate(`/record/new?date=${targetDate}&source=home`)
-              }}
-            >
-              记录今天训练
-            </Button>
-          ) : null}
+          {todayEntryType === 'training' ? (
+            <>
+              <div className="summary-chip summary-chip--training">已记录</div>
+              <div className="today-card__message">今天已经记下了。</div>
+              <Button
+                block
+                color="primary"
+                fill="outline"
+                className="app-secondary-button"
+                style={{ marginTop: '18px' }}
+                onClick={() => navigate('/log')}
+              >
+                去日志看今天
+              </Button>
+            </>
+          ) : todayEntryType === 'rest' ? (
+            <>
+              <div className="summary-chip summary-chip--rest">休息日</div>
+              <div className="today-card__message">今天留给休息。</div>
+              {summary?.todayRestNote ? (
+                <div className="today-card__quote">“{summary.todayRestNote}”</div>
+              ) : null}
+              <Button
+                block
+                color="primary"
+                fill="outline"
+                className="app-secondary-button"
+                style={{ marginTop: '18px' }}
+                onClick={() => navigate('/log')}
+              >
+                去日志看今天
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="today-card__prompt">今天的节奏</div>
+              <div className="today-card__action-stack">
+                <Button
+                  block
+                  color="primary"
+                  size="large"
+                  className="app-primary-button"
+                  disabled={loading}
+                  onClick={() => {
+                    navigate(`/record/new?date=${todayDate}&source=home`)
+                  }}
+                >
+                  记录今天训练
+                </Button>
+                <Button
+                  block
+                  color="primary"
+                  fill="outline"
+                  className="app-secondary-button today-card__rest-button"
+                  disabled={loading}
+                  onClick={() => setRestDialogOpen(true)}
+                >
+                  标记今天休息
+                </Button>
+              </div>
+            </>
+          )}
         </AppCard>
       </section>
+
+      <Dialog
+        visible={restDialogOpen}
+        content={
+          <div className="rest-dialog">
+            <div className="rest-dialog__text">允许自己慢一点。</div>
+            <TextArea
+              rows={3}
+              maxLength={100}
+              placeholder="写一句心情或感悟（选填）"
+              value={restNoteDraft}
+              onChange={setRestNoteDraft}
+              style={{ marginTop: '14px' }}
+            />
+            <div className="rest-dialog__actions">
+              <Button
+                block
+                color="primary"
+                fill="outline"
+                className="app-secondary-button today-card__rest-button rest-dialog__button"
+                disabled={restSaving}
+                onClick={() => {
+                  setRestDialogOpen(false)
+                  setRestNoteDraft('')
+                }}
+              >
+                再想想
+              </Button>
+              <Button
+                block
+                color="primary"
+                fill="outline"
+                className="app-secondary-button today-card__rest-button rest-dialog__button"
+                disabled={restSaving}
+                onClick={() => {
+                  void handleCreateRestDay()
+                }}
+              >
+                {restSaving ? '保存中...' : '今天休息'}
+              </Button>
+            </div>
+          </div>
+        }
+        closeOnMaskClick={!restSaving}
+        onClose={() => {
+          if (!restSaving) {
+            setRestDialogOpen(false)
+            setRestNoteDraft('')
+          }
+        }}
+      />
 
       <SettingsSheet
         open={settingsOpen}

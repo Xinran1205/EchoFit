@@ -7,7 +7,7 @@ type ApiEnvelope<T> = {
 }
 
 type RequestOptions = {
-  body?: unknown
+  body?: FormData | unknown
   headers?: HeadersInit
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   signal?: AbortSignal
@@ -37,10 +37,7 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   unauthorizedHandler = handler
 }
 
-export function getErrorMessage(
-  error: unknown,
-  fallback = '请求失败，请稍后重试'
-) {
+export function getErrorMessage(error: unknown, fallback = '请求失败，请稍后重试') {
   if (error instanceof ApiError && error.message) {
     return error.message
   }
@@ -52,27 +49,66 @@ export function getErrorMessage(
   return fallback
 }
 
-async function request<T>(path: string, options: RequestOptions = {}) {
+function createAuthorizedHeaders(headers?: HeadersInit) {
   const session = readStoredSession()
-  const headers = new Headers(options.headers)
+  const mergedHeaders = new Headers(headers)
 
   if (session?.token) {
-    headers.set('Authorization', `Bearer ${session.token}`)
+    mergedHeaders.set('Authorization', `Bearer ${session.token}`)
   }
 
+  return mergedHeaders
+}
+
+async function fetchWithAuth(path: string, options: RequestOptions = {}) {
+  const headers = createAuthorizedHeaders(options.headers)
   let body: BodyInit | undefined
-  if (options.body !== undefined) {
+
+  if (options.body instanceof FormData) {
+    body = options.body
+  } else if (options.body !== undefined) {
     headers.set('Content-Type', 'application/json')
     body = JSON.stringify(options.body)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  return fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? 'GET',
     headers,
     body,
     signal: options.signal
   })
+}
 
+function handleUnauthorizedIfNeeded(status: number, code: number) {
+  if (status === 401 || code === 40100) {
+    clearStoredSession()
+    unauthorizedHandler?.()
+  }
+}
+
+async function parseFailure(response: Response) {
+  const rawText = await response.text()
+
+  if (rawText) {
+    try {
+      const payload = JSON.parse(rawText) as ApiEnvelope<unknown>
+      const failureCode = payload.code ?? response.status
+      const failureMessage = payload.message ?? '请求失败，请稍后重试'
+      handleUnauthorizedIfNeeded(response.status, failureCode)
+      throw new ApiError(failureMessage, failureCode, response.status)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error
+      }
+    }
+  }
+
+  handleUnauthorizedIfNeeded(response.status, response.status)
+  throw new ApiError('请求失败，请稍后重试', response.status, response.status)
+}
+
+async function request<T>(path: string, options: RequestOptions = {}) {
+  const response = await fetchWithAuth(path, options)
   const rawText = await response.text()
   let payload: ApiEnvelope<T> | null = null
 
@@ -88,15 +124,19 @@ async function request<T>(path: string, options: RequestOptions = {}) {
   const failureMessage = payload?.message ?? '请求失败，请稍后重试'
 
   if (!response.ok || payload?.code !== 0 || payload === null) {
-    if (response.status === 401 || failureCode === 40100) {
-      clearStoredSession()
-      unauthorizedHandler?.()
-    }
-
+    handleUnauthorizedIfNeeded(response.status, failureCode)
     throw new ApiError(failureMessage, failureCode, response.status)
   }
 
   return payload.data
+}
+
+export async function fetchApiBlob(path: string, options?: Omit<RequestOptions, 'body' | 'method'>) {
+  const response = await fetchWithAuth(path, { ...options, method: 'GET' })
+  if (!response.ok) {
+    await parseFailure(response)
+  }
+  return response.blob()
 }
 
 export const api = {
@@ -106,13 +146,13 @@ export const api = {
   get<T>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>) {
     return request<T>(path, { ...options, method: 'GET' })
   },
-  patch<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) {
+  patch<T>(path: string, body?: FormData | unknown, options?: Omit<RequestOptions, 'method' | 'body'>) {
     return request<T>(path, { ...options, body, method: 'PATCH' })
   },
-  post<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) {
+  post<T>(path: string, body?: FormData | unknown, options?: Omit<RequestOptions, 'method' | 'body'>) {
     return request<T>(path, { ...options, body, method: 'POST' })
   },
-  put<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) {
+  put<T>(path: string, body?: FormData | unknown, options?: Omit<RequestOptions, 'method' | 'body'>) {
     return request<T>(path, { ...options, body, method: 'PUT' })
   }
 }

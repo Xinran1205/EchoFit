@@ -15,6 +15,14 @@ export type TrainingMood =
   | 'recovery'
   | 'light'
 
+export type TrainingRecordPhoto = {
+  id: string
+  originalFilename?: string | null
+  mimeType: string
+  fileSize: number
+  downloadPath: string
+}
+
 export type TrainingRecord = {
   id: string
   userId: string
@@ -24,7 +32,17 @@ export type TrainingRecord = {
   mood: TrainingMood
   weightKg?: number | null
   note?: string | null
+  photos: TrainingRecordPhoto[]
   futureMessagePreview?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type RestDay = {
+  id: string
+  userId: string
+  date: string
+  note?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -32,6 +50,8 @@ export type TrainingRecord = {
 export type HomeSummary = {
   today: string
   todayRecorded: boolean
+  todayEntryType?: 'training' | 'rest' | null
+  todayRestNote?: string | null
   last7Days: {
     trainingDays: number
     totalDurationMinutes: number
@@ -61,6 +81,11 @@ export type UpdateTrainingRecordInput = {
   note?: string
 }
 
+export type CreateRestDayInput = {
+  date: string
+  note?: string
+}
+
 export type CreateTrainingRecordResult = {
   recordId: string
   echoId: string
@@ -69,6 +94,7 @@ export type CreateTrainingRecordResult = {
 export type MonthRecordsResult = {
   month: string
   records: TrainingRecord[]
+  restDays: RestDay[]
 }
 
 export type LatestWeightResult = {

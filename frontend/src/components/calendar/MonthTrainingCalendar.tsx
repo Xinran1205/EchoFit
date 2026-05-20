@@ -8,6 +8,7 @@ type MonthTrainingCalendarProps = {
   month: Dayjs
   selectedDate: string
   recordedDates: Set<string>
+  restDates: Set<string>
   onSelect: (date: string) => void
   onChangeMonth: (nextMonth: Dayjs) => void
 }
@@ -16,6 +17,7 @@ export function MonthTrainingCalendar({
   month,
   selectedDate,
   recordedDates,
+  restDates,
   onSelect,
   onChangeMonth
 }: MonthTrainingCalendarProps) {
@@ -65,7 +67,8 @@ export function MonthTrainingCalendar({
           const isSelected = dateKey === selectedDate
           const isToday = dateKey === todayKey
           const isFuture = item.isAfter(today, 'day')
-          const hasRecord = recordedDates.has(dateKey)
+          const hasTrainingRecord = recordedDates.has(dateKey)
+          const hasRestDay = restDates.has(dateKey)
 
           return (
             <button
@@ -76,6 +79,7 @@ export function MonthTrainingCalendar({
                 'calendar-cell',
                 isSelected ? 'calendar-cell--selected' : '',
                 isToday ? 'calendar-cell--today' : '',
+                hasRestDay ? 'calendar-cell--rest' : '',
                 isFuture ? 'calendar-cell--disabled' : ''
               ]
                 .filter(Boolean)
@@ -83,7 +87,12 @@ export function MonthTrainingCalendar({
               onClick={isFuture ? undefined : () => onSelect(dateKey)}
             >
               <span>{item.date()}</span>
-              {hasRecord ? <span className="calendar-dot" /> : null}
+              {hasTrainingRecord || hasRestDay ? (
+                <span className="calendar-markers">
+                  {hasTrainingRecord ? <span className="calendar-dot" /> : null}
+                  {hasRestDay ? <span className="calendar-dot calendar-dot--rest" /> : null}
+                </span>
+              ) : null}
             </button>
           )
         })}

@@ -13,6 +13,11 @@ import { getEchoByRecord, saveFutureMessage } from '../../features/echo/echo.api
 import type { EchoResponse } from '../../features/echo/echo.types'
 import { getErrorMessage } from '../../lib/api'
 
+function buildLogReturnPath(date: string) {
+  const searchParams = new URLSearchParams({ date })
+  return `/log?${searchParams.toString()}`
+}
+
 export function EchoPage() {
   const navigate = useNavigate()
   const { recordId } = useParams()
@@ -62,6 +67,7 @@ export function EchoPage() {
   }, [recordId])
 
   const source = searchParams.get('source') ?? 'home'
+  const logDate = searchParams.get('logDate')
 
   async function handleSaveFutureMessage(content: string) {
     if (!recordId) {
@@ -134,7 +140,9 @@ export function EchoPage() {
 
       <BottomSubmitBar
         text="完成"
-        onClick={() => navigate(source === 'log' ? '/log' : '/')}
+        onClick={() =>
+          navigate(source === 'log' && logDate ? buildLogReturnPath(logDate) : source === 'log' ? '/log' : '/')
+        }
       />
 
       <FutureMessageSheet

@@ -48,6 +48,10 @@ spring:
             enable: true
           starttls:
             enable: false
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 60MB
 
 mybatis-plus:
   configuration:
@@ -77,6 +81,8 @@ app:
     default-enabled: true
     daily-hour: 20
     daily-minute: 0
+  storage:
+    training-photo-root: ${TRAINING_PHOTO_STORAGE_ROOT:./data/uploads/training-photos}
 
 management:
   endpoints:

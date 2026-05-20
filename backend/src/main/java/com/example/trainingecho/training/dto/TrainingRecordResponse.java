@@ -12,6 +12,7 @@ public record TrainingRecordResponse(
     String mood,
     BigDecimal weightKg,
     String note,
+    List<TrainingRecordPhotoResponse> photos,
     String futureMessagePreview,
     String createdAt,
     String updatedAt

@@ -81,6 +81,8 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
       TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ./data/uploads:/app/data/uploads
     network_mode: host
 
   frontend:
