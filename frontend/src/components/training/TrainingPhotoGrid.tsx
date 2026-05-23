@@ -41,7 +41,7 @@ export function TrainingPhotoGrid({
         ]
           .filter(Boolean)
           .join(' ')}
-        >
+      >
         {items.map((item, index) => (
           <div key={item.key} className="training-photo-thumb-shell">
             {previewMode === 'viewer' ? (

@@ -426,9 +426,9 @@ public class TrainingRecordService {
         if (photoCount > MAX_PHOTO_COUNT) {
             throw new BizException(
                 ErrorCode.VALIDATION_ERROR,
-                    "最多只能保存 1 张训练照片",
-                    HttpStatus.BAD_REQUEST
-                );
+                "最多只能保存 1 张训练照片",
+                HttpStatus.BAD_REQUEST
+            );
         }
     }
 
