@@ -97,6 +97,7 @@ services:
     network_mode: host
     volumes:
       - ./frontend/nginx.aliyun.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./happyholiday:/usr/share/nginx/html/happyholiday:ro
 
 volumes:
   mysql_data:

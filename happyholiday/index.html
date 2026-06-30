@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>雪姐放假快乐</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+html,body{
+    width:100%;
+    height:100dvh;
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-tap-highlight-color:transparent;
+}
+
+body{
+    background:linear-gradient(135deg,#87CEEB,#E0F6FF,#FFF8E7);
+    background-size:200% 200%;
+    animation:gradientFlow 15s ease infinite;
+}
+
+@keyframes gradientFlow{
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+
+#canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:1;
+}
+
+.center{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:100dvh;
+    text-align:center;
+    padding:0 8vw;
+}
+
+.title{
+    font-size:12vw;
+    font-weight:900;
+    color:#fff;
+    letter-spacing:-0.02em;
+    line-height:1.1;
+    text-shadow:
+        0 2px 8px rgba(0,0,0,0.12),
+        0 4px 20px rgba(0,0,0,0.08),
+        0 8px 40px rgba(0,0,0,0.06);
+    margin-bottom:3vh;
+}
+
+.title span{
+    display:inline-block;
+    opacity:0;
+    transform:translateY(-60px);
+    animation:dropIn 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+.title span:nth-child(1){animation-delay:0.15s}
+.title span:nth-child(2){animation-delay:0.18s}
+.title span:nth-child(3){animation-delay:0.26s}
+.title span:nth-child(4){animation-delay:0.34s}
+.title span:nth-child(5){animation-delay:0.42s}
+.title span:nth-child(6){animation-delay:0.5s}
+.title span:nth-child(7){animation-delay:0.58s}
+.title span:nth-child(8){animation-delay:0.66s}
+.title span:nth-child(9){animation-delay:0.74s}
+.title span:nth-child(10){animation-delay:0.82s}
+
+@keyframes dropIn{
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+.subtitle{
+    font-size:4.2vw;
+    font-weight:400;
+    color:#1A4D7A;
+    letter-spacing:0.04em;
+    opacity:0;
+    animation:fadeIn 0.8s ease forwards;
+    animation-delay:1.2s;
+}
+
+.hint{
+    position:fixed;
+    bottom:8vh;
+    left:0;
+    width:100%;
+    text-align:center;
+    font-size:3.5vw;
+    color:rgba(26,77,122,0.6);
+    font-weight:400;
+    opacity:0;
+    animation:fadeIn 1s ease forwards;
+    animation-delay:3s;
+    z-index:2;
+}
+
+@keyframes fadeIn{
+    to{opacity:1}
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="center">
+    <div class="title" id="title"></div>
+    <div class="subtitle" id="subtitle"></div>
+</div>
+
+<div class="hint" id="hint"></div>
+
+<script>
+var TITLE_TEXT = "雪姐放假快乐";
+var SUBTITLE_TEXT = "开开心心过暑假，去他妈的工作";
+var HINT_TEXT = "戳屏幕庆祝";
+
+// === 逐字拆分标题 ===
+var titleEl = document.getElementById('title');
+var chars = TITLE_TEXT.split('');
+
+for(var i=0;i<chars.length;i++){
+    var s=document.createElement('span');
+    s.textContent=chars[i]===' ' ? '\u00A0' : chars[i];
+    titleEl.appendChild(s);
+}
+
+document.getElementById('subtitle').textContent = SUBTITLE_TEXT;
+document.getElementById('hint').textContent = HINT_TEXT;
+
+// === Canvas 设置 ===
+var canvas=document.getElementById('canvas');
+var ctx=canvas.getContext('2d');
+var W,H;
+
+function resize(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+}
+
+resize();
+window.addEventListener('resize',resize);
+
+// === 色板 ===
+var COLORS=['#4A90D9','#FFD60A','#FF6B9D','#7ED957','#FFFFFF'];
+var SHAPES=['rect','circle'];
+
+// === 粒子系统 ===
+var particles=[];
+
+function spawn(x,y,count,burst){
+    for(var i=0;i<count;i++){
+        var angle=Math.random()*Math.PI*2;
+        var speed=burst ? (3+Math.random()*6) : (1+Math.random()*2);
+
+        particles.push({
+            x:x,
+            y:y,
+            vx:Math.cos(angle)*speed,
+            vy:burst ? Math.sin(angle)*speed - 2 : Math.random()*2+1,
+            gravity:0.15+Math.random()*0.1,
+            friction:0.99,
+            size:6+Math.random()*8,
+            color:COLORS[Math.floor(Math.random()*COLORS.length)],
+            shape:SHAPES[Math.floor(Math.random()*SHAPES.length)],
+            rotation:Math.random()*Math.PI*2,
+            rotSpeed:(Math.random()*0.2+0.1)*(Math.random()>0.5?1:-1),
+            alpha:1,
+            decay:0.004+Math.random()*0.004
+        });
+    }
+}
+
+// === 动画循环 ===
+function animate(){
+    ctx.clearRect(0,0,W,H);
+
+    for(var i=particles.length-1;i>=0;i--){
+        var p=particles[i];
+
+        p.vy+=p.gravity;
+        p.vx*=p.friction;
+        p.x+=p.vx;
+        p.y+=p.vy;
+        p.rotation+=p.rotSpeed;
+        p.alpha-=p.decay;
+
+        if(p.alpha<=0 || p.y>H+20){
+            particles.splice(i,1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha=Math.max(0,p.alpha);
+        ctx.translate(p.x,p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle=p.color;
+
+        if(p.shape==='rect'){
+            ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);
+        }else{
+            ctx.beginPath();
+            ctx.arc(0,0,p.size/2,0,Math.PI*2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    requestAnimationFrame(animate);
+}
+
+// === 彩纸雨，持续约 3 秒 ===
+var dropDuration=3000;
+var dropStart=Date.now();
+
+function rainDrop(){
+    if(Date.now()-dropStart<dropDuration){
+        for(var i=0;i<4;i++){
+            spawn(Math.random()*W,-20,1,false);
+        }
+        setTimeout(rainDrop,80);
+    }
+}
+
+rainDrop();
+setTimeout(rainDrop,200);
+
+// === 点击 / 触摸交互 ===
+function handleTap(e){
+    var x,y;
+
+    if(e.touches&&e.touches.length>0){
+        x=e.touches[0].clientX;
+        y=e.touches[0].clientY;
+    }else{
+        x=e.clientX;
+        y=e.clientY;
+    }
+
+    spawn(x,y,30,true);
+}
+
+document.addEventListener('touchstart',handleTap,{passive:true});
+document.addEventListener('click',handleTap);
+
+// === 启动 ===
+animate();
+</script>
+
+</body>
+</html>

@@ -86,6 +86,8 @@ services:
       - backend
     ports:
       - "8081:80"
+    volumes:
+      - ./happyholiday:/usr/share/nginx/html/happyholiday:ro
 
 volumes:
   mysql_data:
